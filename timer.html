@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>简单计时</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #FFE7D0;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .timer {
+        font-size: 72px;
+        text-align: center;
+        padding: 40px;
+        background-color: #FFE7D0;
+        color: #FC6E20;
+        margin-top: 50px;
+        font-weight: bold;
+        border: 2px solid #FC6E20;
+        border-radius: 30px;
+      }
+      .record-btn {
+        display: block;
+        padding: 10px;
+        background-color: #FC6E20;
+        text-align: center;
+        color: #ffffff;
+        font-size: 24px;
+        margin-top: 20px;
+        cursor: pointer;
+        border-radius: 30px;
+        width: calc(4em + 96px);
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+      }
+      .record-btn:hover {
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+      }
+      .date-selector {
+        display: flex;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        justify-content: center;
+      }
+      .date-selector span {
+        cursor: pointer;
+        padding: 5px 10px;
+        margin: 0 5px;
+        border-radius: 5px;
+      }
+      .date-selector span.selected {
+        background-color: #FC6E20;
+        color: #ffffff;
+      }
+
+      .date-selector span {
+        cursor: pointer;
+        padding: 5px 10px;
+        margin: 0 5px;
+        border-radius: 5px;
+        border: 1px solid #FC6E20;
+        color: #FC6E20;
+      }
+      .date-selector span.selected {
+        background-color: #FC6E20;
+        color: #ffffff;
+      }
+
+      
+      table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+        font-size: 14px; /* 适应手机端 */
+      }
+      table,
+      th,
+      td {
+        border: 1px solid white;
+        color: #1b1b1b;
+      }
+      th,
+      td {
+        padding: 8px;
+        text-align: center;
+      }
+      input[type="text"] {
+        width: 100%;
+        border: none;
+        text-align: center;
+        background-color: transparent;
+      }
+      th:nth-child(4),
+      td:nth-child(4) {
+        display: none;
+      }
+      th.date-column,
+      td.date-column {
+        display: none;
+      }
+
+            @media (max-width: 767px) {
+        .timer {
+          font-size: 48px;
+        }
+        .record-btn {
+          font-size: 18px;
+          width: calc(4em + 56px);
+        }
+        .date-selector span {
+          font-size: 12px;
+          padding: 3px 6px;
+          margin: 0 1px;
+        }
+        table {
+          font-size: 12px;
+        }
+        th,
+        td {
+          padding: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="timer">00:00:00</div>
+      <div class="record-btn">记录</div>
+      <div class="date-selector"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>时间区间</th>
+            <th>名称</th>
+            <th>记录时间</th>
+            <th class="date-column">日期</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      const timer = document.querySelector(".timer");
+      const recordBtn = document.querySelector(".record-btn");
+      const tbody = document.querySelector("tbody");
+      const dateSelector = document.querySelector(".date-selector");
+
+      let time = Number(localStorage.getItem("time")) || 0;
+      let interval;
+      let currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+
+      function padZero(num) {
+        return num.toString().padStart(2, "0");
+      }
+
+      function formatTime(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms - hours * 3600000) / 60000);
+        const seconds = Math.floor((ms - hours * 3600000 - minutes * 60000) / 1000);
+        return `${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+      }
+
+      function formatRecordTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString("zh-CN", { hour12: false });
+      }
+
+      function formatRecordDate(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString("zh-CN");
+      }
+
+      function startTimer() {
+        console.log("计时器开始");
+        const startTime = Date.now() - time;
+        interval = setInterval(() => {
+          time = Date.now() - startTime;
+          timer.textContent = formatTime(time);
+          localStorage.setItem("time", time);
+        }, 1000);
+      }
+
+      function resetTimer() {
+        console.log("计时器重置");
+        clearInterval(interval);
+        timer.textContent = "00:00:00";
+        time = 0;
+      }
+
+      function loadRecords() {
+        tbody.innerHTML = "";
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+
+        const filteredRecords = records.filter((record) => {
+          const recordDate = new Date(record.startTime).setHours(0, 0, 0, 0);
+          return recordDate === currentDate.getTime();
+        });
+
+        filteredRecords
+          .sort((a, b) => a.startTime - b.startTime)
+          .forEach((record) => {
+            addRecord(record.startTime, record.endTime, record.name, formatRecordDate(record.startTime));
+          });
+      }
+
+            function saveRecord(startTime, endTime, name) {
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+        records.push({
+          startTime: startTime,
+          endTime: endTime,
+          name: name,
+          date: formatRecordDate(startTime),
+        });
+        localStorage.setItem("records", JSON.stringify(records));
+      }
+
+      function addRecord(startTime, endTime, name, date) {
+        const tr = document.createElement("tr");
+        const timeTd = document.createElement("td");
+        const nameTd = document.createElement("td");
+        const durationTd = document.createElement("td");
+        const dateTd = document.createElement("td");
+        const deleteBtnTd = document.createElement("td");
+        const input = document.createElement("input");
+        const deleteBtn = document.createElement("button");
+        const recordTime = `${formatRecordTime(startTime)} - ${formatRecordTime(endTime)}`;
+        const duration = endTime - startTime;
+
+        input.type = "text";
+        input.value = name || "";
+        input.placeholder = "编辑";
+        input.onblur = () => {
+    const index = Array.from(tbody.children).indexOf(tr);
+    const records = JSON.parse(localStorage.getItem("records")) || [];
+    const filteredRecords = records.filter((record) => {
+        const recordDate = new Date(record.startTime).setHours(0, 0, 0, 0);
+        return recordDate === currentDate.getTime();
+    });
+    filteredRecords[index].name = input.value;
+    localStorage.setItem("records", JSON.stringify(records));
+};
+
+        timeTd.textContent = recordTime;
+        durationTd.textContent = formatTime(duration);
+        nameTd.appendChild(input);
+        dateTd.textContent = date;
+        deleteBtn.textContent = "X";
+        deleteBtn.onclick = () => {
+          const index = Array.from(tbody.children).indexOf(tr);
+          const records = JSON.parse(localStorage.getItem("records")) || [];
+          records.splice(index, 1);
+          localStorage.setItem("records", JSON.stringify(records));
+          tbody.removeChild(tr);
+        };
+        deleteBtnTd.appendChild(deleteBtn);
+        tr.appendChild(timeTd);
+        tr.appendChild(nameTd);
+        tr.appendChild(durationTd);
+        tr.appendChild(dateTd);
+        tr.appendChild(deleteBtnTd);
+        tbody.appendChild(tr);
+      }
+
+    function createDateString(date) {
+        return `${padZero(date.getMonth() + 1)}/${padZero(date.getDate())}`;
+      }
+
+      function createSevenDaysButtons() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateString = createDateString(date);
+          const button = document.createElement("span");
+          button.textContent = dateString;
+          button.onclick = () => {
+            Array.from(dateSelector.children).forEach((child) => child.classList.remove("selected"));
+            button.classList.add("selected");
+            currentDate = date;
+            loadRecords();
+          };
+          dateSelector.appendChild(button);
+        }
+        dateSelector.children[0].classList.add("selected");
+      }
+
+      recordBtn.addEventListener("click", () => {
+        console.log("记录按钮被点击");
+        const now = Date.now();
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+        if (records.length > 0) {
+          const lastRecord = records[records.length - 1];
+          saveRecord(lastRecord.endTime, now);
+          addRecord(lastRecord.endTime, now, "", formatRecordDate(lastRecord.endTime));
+        } else {
+          addRecord(now, now, "", formatRecordDate(now));
+          saveRecord(now, now, "");
+        }
+        resetTimer();
+        startTimer();
+        loadRecords();
+      });
+
+      startTimer(); // 页面加载时自动开始计时
+      createSevenDaysButtons();
+      loadRecords();
+
+    </script>
+  </body>
+</html>
