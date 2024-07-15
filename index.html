@@ -119,14 +119,13 @@
     <div class="date-selector"></div>
     <table>
         <thead>
-        <tr>
-            <th>时间</th>
-            <th>小时</th>
-            <th>分</th>
-            <th>事件</th>
-            <th>操作</th>
-        </tr>
-        </thead>
+    <tr>
+        <th>时间</th>
+        <th>小时</th>
+        <th>事件</th>
+        <th>操作</th>
+    </tr>
+</thead>
         <tbody></tbody>
     </table>
 </div>
@@ -207,53 +206,51 @@
     }
 
     function addRecord(startTime, endTime, name, date) {
-        const tr = document.createElement("tr");
-        const timeTd = document.createElement("td");
-        const hoursTd = document.createElement("td");
-        const minutesTd = document.createElement("td");
-        const eventTd = document.createElement("td");
-        const deleteTd = document.createElement("td");
-        const deleteBtn = document.createElement("button");
-        const recordTime = formatRecordTime(startTime);
-        const duration = endTime - startTime;
-        const hours = Math.floor(duration / 3600000);
-        const minutes = Math.floor((duration - hours * 3600000) / 60000);
+    const tr = document.createElement("tr");
+    const timeTd = document.createElement("td");
+    const hoursTd = document.createElement("td");
+    const eventTd = document.createElement("td");
+    const deleteTd = document.createElement("td");
+    const deleteBtn = document.createElement("button");
+    const recordTime = formatRecordTime(startTime);
+    const duration = endTime - startTime;
+    const hours = duration / 3600000; // 计算小时，包括小数部分
+    const roundedHours = Math.floor(hours); // 整数小时
+    const minutes = Math.round((hours - roundedHours) * 60); // 剩余分钟
 
-        deleteBtn.textContent = "X";
-        deleteBtn.onclick = () => {
-            const records = JSON.parse(localStorage.getItem("records")) || [];
-            const recordIndex = records.findIndex(record => record.startTime === startTime && record.endTime === endTime);
-            if (recordIndex > -1) {
-                records.splice(recordIndex, 1);
-                localStorage.setItem("records", JSON.stringify(records));
-                loadRecords();
-            }
-        };
+    deleteBtn.textContent = "X";
+    deleteBtn.onclick = () => {
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+        const recordIndex = records.findIndex(record => record.startTime === startTime && record.endTime === endTime);
+        if (recordIndex > -1) {
+            records.splice(recordIndex, 1);
+            localStorage.setItem("records", JSON.stringify(records));
+            loadRecords();
+        }
+    };
 
-        timeTd.textContent = recordTime;
-        hoursTd.textContent = hours;
-        minutesTd.textContent = padZero(minutes);
-        const eventInput = document.createElement("input");
-        eventInput.type = "text";
-        eventInput.value = name || "";
-        eventInput.onblur = () => {
-            const records = JSON.parse(localStorage.getItem("records")) || [];
-            const recordIndex = records.findIndex(record => record.startTime === startTime && record.endTime === endTime);
-            if (recordIndex > -1) {
-                records[recordIndex].name = eventInput.value;
-                localStorage.setItem("records", JSON.stringify(records));
-            }
-        };
-        eventTd.appendChild(eventInput);
-        deleteTd.appendChild(deleteBtn);
+    timeTd.textContent = recordTime;
+    hoursTd.textContent = roundedHours + (minutes / 60).toFixed(2).substr(1); // 格式化为 "小时.分钟"
+    const eventInput = document.createElement("input");
+    eventInput.type = "text";
+    eventInput.value = name || "";
+    eventInput.onblur = () => {
+        const records = JSON.parse(localStorage.getItem("records")) || [];
+        const recordIndex = records.findIndex(record => record.startTime === startTime && record.endTime === endTime);
+        if (recordIndex > -1) {
+            records[recordIndex].name = eventInput.value;
+            localStorage.setItem("records", JSON.stringify(records));
+        }
+    };
+    eventTd.appendChild(eventInput);
+    deleteTd.appendChild(deleteBtn);
 
-        tr.appendChild(timeTd);
-        tr.appendChild(hoursTd);
-        tr.appendChild(minutesTd);
-        tr.appendChild(eventTd);
-        tr.appendChild(deleteTd);
-        tbody.appendChild(tr);
-    }
+    tr.appendChild(timeTd);
+    tr.appendChild(hoursTd);
+    tr.appendChild(eventTd);
+    tr.appendChild(deleteTd);
+    tbody.appendChild(tr);
+}
 
     function createDateString(date) {
         return `${padZero(date.getMonth() + 1)}/${padZero(date.getDate())}`;
