@@ -294,6 +294,9 @@
         const rows = table.querySelectorAll("tr");
         let copyText = "";
 
+        // 获取当前日期
+        const currentDate = new Date().toLocaleDateString('zh-CN');
+
         rows.forEach((row, index) => {
             const cells = row.querySelectorAll("th, td");
             const rowData = Array.from(cells).map((cell, cellIndex) => {
@@ -311,6 +314,13 @@
                     return cell.textContent;
                 }
             }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
+
+            // 添加日期列
+            if (index === 0) {
+                rowData.push("日期");
+            } else {
+                rowData.push(currentDate);
+            }
 
             copyText += rowData.join("\t") + "\n";
         });
@@ -331,6 +341,7 @@
             document.body.removeChild(tempTextArea);
         }
     });
+
 
     startTimer();
     createSevenDaysButtons();
