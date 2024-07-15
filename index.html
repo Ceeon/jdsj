@@ -289,12 +289,37 @@
         loadRecords();
     });
 
-    copyBtn.addEventListener("click", () => {
+     copyBtn.addEventListener("click", () => {
         const table = document.querySelector("table");
-        const range = document.createRange();
-        range.selectNode(table);
-        window.getSelection().removeAllRanges();
-        window.getSelection().addRange(range);
+        const rows = table.querySelectorAll("tr");
+        let copyText = "";
+
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll("th, td");
+            const rowData = Array.from(cells).map((cell, cellIndex) => {
+                if (index === 0) {
+                    // 表头
+                    return cell.textContent;
+                } else if (cellIndex === 2) {
+                    // 事件列（输入框）
+                    const input = cell.querySelector("input");
+                    return input ? input.value : "";
+                } else if (cellIndex === 3) {
+                    // 跳过"操作"列
+                    return "";
+                } else {
+                    return cell.textContent;
+                }
+            }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
+
+            copyText += rowData.join("\t") + "\n";
+        });
+
+        // 创建一个临时的textarea元素来存储要复制的文本
+        const tempTextArea = document.createElement("textarea");
+        tempTextArea.value = copyText;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
         
         try {
             document.execCommand('copy');
@@ -303,7 +328,7 @@
             console.error('复制失败：', err);
             alert('复制失败，请手动选择表格并复制');
         } finally {
-            window.getSelection().removeAllRanges();
+            document.body.removeChild(tempTextArea);
         }
     });
 
