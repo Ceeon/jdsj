@@ -213,10 +213,12 @@
     const deleteTd = document.createElement("td");
     const deleteBtn = document.createElement("button");
     const recordTime = formatRecordTime(startTime);
-    const duration = endTime - startTime;
-    const hours = duration / 3600000; // 计算小时，包括小数部分
-    const roundedHours = Math.floor(hours); // 整数小时
-    const minutes = Math.round((hours - roundedHours) * 60); // 剩余分钟
+    
+    // 计算时间差
+    const durationInMs = endTime - startTime;
+    const hours = Math.floor(durationInMs / 3600000); // 获取完整小时数
+    const minutes = Math.floor((durationInMs % 3600000) / 60000); // 获取剩余分钟数
+    const decimalHours = hours + (minutes / 60); // 将分钟转换为小时的小数部分
 
     deleteBtn.textContent = "X";
     deleteBtn.onclick = () => {
@@ -230,7 +232,7 @@
     };
 
     timeTd.textContent = recordTime;
-    hoursTd.textContent = roundedHours + (minutes / 60).toFixed(2).substr(1); // 格式化为 "小时.分钟"
+    hoursTd.textContent = decimalHours.toFixed(2); // 显示两位小数
     const eventInput = document.createElement("input");
     eventInput.type = "text";
     eventInput.value = name || "";
