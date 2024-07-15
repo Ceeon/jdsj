@@ -71,7 +71,7 @@
             width: 100%;
             margin-top: 20px;
             border-collapse: collapse;
-            font-size: 14px; /* 适应手机端 */
+            font-size: 14px;
         }
         table, th, td {
             border: 1px solid white;
@@ -119,13 +119,13 @@
     <div class="date-selector"></div>
     <table>
         <thead>
-    <tr>
-        <th>时间</th>
-        <th>小时</th>
-        <th>事件</th>
-        <th>操作</th>
-    </tr>
-</thead>
+        <tr>
+            <th>时间</th>
+            <th>小时</th>
+            <th>事件</th>
+            <th>操作</th>
+        </tr>
+        </thead>
         <tbody></tbody>
     </table>
 </div>
@@ -183,14 +183,14 @@
         const records = JSON.parse(localStorage.getItem("records")) || [];
 
         const filteredRecords = records.filter((record) => {
-            const recordDate = new Date(record.startTime).setHours(0, 0, 0, 0);
+            const recordDate = new Date(record.endTime).setHours(0, 0, 0, 0);
             return recordDate === currentDate.getTime();
         });
 
         filteredRecords
-            .sort((a, b) => a.startTime - b.startTime)
+            .sort((a, b) => a.endTime - b.endTime)
             .forEach((record) => {
-                addRecord(record.startTime, record.endTime, record.name, formatRecordDate(record.startTime));
+                addRecord(record.startTime, record.endTime, record.name, formatRecordDate(record.endTime));
             });
     }
 
@@ -200,12 +200,10 @@
             startTime: startTime,
             endTime: endTime,
             name: name,
-            date: formatRecordDate(startTime),
+            date: formatRecordDate(endTime),
         });
         localStorage.setItem("records", JSON.stringify(records));
     }
-
-    
 
     function addRecord(startTime, endTime, name, date) {
         const tr = document.createElement("tr");
@@ -214,12 +212,9 @@
         const eventTd = document.createElement("td");
         const deleteTd = document.createElement("td");
         const deleteBtn = document.createElement("button");
-        const recordTime = formatRecordTime(startTime);
-
-        const durationInMs = endTime - startTime;
-        const hours = Math.floor(durationInMs / 3600000); // 获取完整小时数
-        const minutes = Math.floor((durationInMs % 3600000) / 60000); // 获取剩余分钟数
-        const decimalHours = hours + (minutes / 60); // 将分钟转换为小时的小数部分
+        const recordTime = formatRecordTime(endTime);
+        const duration = endTime - startTime;
+        const hours = duration / 3600000;
 
         deleteBtn.textContent = "X";
         deleteBtn.onclick = () => {
@@ -233,7 +228,7 @@
         };
 
         timeTd.textContent = recordTime;
-        hoursTd.textContent = decimalHours.toFixed(2); // 显示两位小数
+        hoursTd.textContent = hours.toFixed(2);
         const eventInput = document.createElement("input");
         eventInput.type = "text";
         eventInput.value = name || "";
@@ -284,7 +279,7 @@
         if (records.length > 0) {
             const lastRecord = records[records.length - 1];
             saveRecord(lastRecord.endTime, now, "");
-            addRecord(lastRecord.endTime, now, "", formatRecordDate(lastRecord.endTime));
+            addRecord(lastRecord.endTime, now, "", formatRecordDate(now));
         } else {
             addRecord(now, now, "", formatRecordDate(now));
             saveRecord(now, now, "");
@@ -295,24 +290,24 @@
     });
 
     copyBtn.addEventListener("click", () => {
-    const table = document.querySelector("table");
-    const range = document.createRange();
-    range.selectNode(table);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    
-    try {
-        document.execCommand('copy');
-        alert('表格内容已复制到剪贴板，现在可以直接粘贴到Excel中');
-    } catch (err) {
-        console.error('复制失败：', err);
-        alert('复制失败，请手动选择表格并复制');
-    } finally {
+        const table = document.querySelector("table");
+        const range = document.createRange();
+        range.selectNode(table);
         window.getSelection().removeAllRanges();
-    }
-});
+        window.getSelection().addRange(range);
+        
+        try {
+            document.execCommand('copy');
+            alert('表格内容已复制到剪贴板，现在可以直接粘贴到Excel中');
+        } catch (err) {
+            console.error('复制失败：', err);
+            alert('复制失败，请手动选择表格并复制');
+        } finally {
+            window.getSelection().removeAllRanges();
+        }
+    });
 
-    startTimer(); // 页面加载时自动开始计时
+    startTimer();
     createSevenDaysButtons();
     loadRecords();
 </script>
