@@ -190,7 +190,7 @@
         filteredRecords
             .sort((a, b) => a.endTime - b.endTime)
             .forEach((record) => {
-                addRecord(record.startTime, record.endTime, record.name, formatRecordDate(record.endTime));
+                addRecord(record.startTime, record.endTime, record.name);
             });
     }
 
@@ -205,7 +205,7 @@
         localStorage.setItem("records", JSON.stringify(records));
     }
 
-    function addRecord(startTime, endTime, name, date) {
+    function addRecord(startTime, endTime, name) {
         const tr = document.createElement("tr");
         const timeTd = document.createElement("td");
         const hoursTd = document.createElement("td");
@@ -279,9 +279,9 @@
         if (records.length > 0) {
             const lastRecord = records[records.length - 1];
             saveRecord(lastRecord.endTime, now, "");
-            addRecord(lastRecord.endTime, now, "", formatRecordDate(now));
+            addRecord(lastRecord.endTime, now, "");
         } else {
-            addRecord(now, now, "", formatRecordDate(now));
+            addRecord(now, now, "");
             saveRecord(now, now, "");
         }
         resetTimer();
@@ -289,58 +289,61 @@
         loadRecords();
     });
 
-     copyBtn.addEventListener("click", () => {
-        const table = document.querySelector("table");
-        const rows = table.querySelectorAll("tr");
-        let copyText = "";
+   copyBtn.addEventListener("click", () => {
+  const table = document.querySelector("table");
+  const rows = table.querySelectorAll("tr");
+  let copyText = "";
+  
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll("th, td");
+    const rowData = Array.from(cells).map((cell, cellIndex) => {
+      if (index === 0) {
+        // 表头
+        return cell.textContent;
+      } else if (cellIndex === 2) {
+        // 事件列（输入框）
+        const input = cell.querySelector("input");
+        return input ? input.value : "";
+      } else if (cellIndex === 3) {
+        // 跳过"操作"列
+        return "";
+      } else {
+        return cell.textContent;
+      }
+    }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
+    
+    // 添加日期列
+    if (index === 0) {
+      rowData.push("日期");
+    } else {
+      // 使用记录的日期
+      const timeString = rowData[0]; // 获取时间字符串
+      const [hours, minutes, seconds] = timeString.split(':').map(Number);
+      const recordDate = new Date(currentDate);
+      recordDate.setHours(hours, minutes, seconds);
+      const formattedDate = formatRecordDate(recordDate.getTime());
+      rowData.push(formattedDate);
+    }
+    
+    copyText += rowData.join("\t") + "\n";
+  });
 
-        // 获取当前日期
-        const currentDate = new Date().toLocaleDateString('zh-CN');
-
-        rows.forEach((row, index) => {
-            const cells = row.querySelectorAll("th, td");
-            const rowData = Array.from(cells).map((cell, cellIndex) => {
-                if (index === 0) {
-                    // 表头
-                    return cell.textContent;
-                } else if (cellIndex === 2) {
-                    // 事件列（输入框）
-                    const input = cell.querySelector("input");
-                    return input ? input.value : "";
-                } else if (cellIndex === 3) {
-                    // 跳过"操作"列
-                    return "";
-                } else {
-                    return cell.textContent;
-                }
-            }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
-
-            // 添加日期列
-            if (index === 0) {
-                rowData.push("日期");
-            } else {
-                rowData.push(currentDate);
-            }
-
-            copyText += rowData.join("\t") + "\n";
-        });
-
-        // 创建一个临时的textarea元素来存储要复制的文本
-        const tempTextArea = document.createElement("textarea");
-        tempTextArea.value = copyText;
-        document.body.appendChild(tempTextArea);
-        tempTextArea.select();
-        
-        try {
-            document.execCommand('copy');
-            alert('表格内容已复制到剪贴板，现在可以直接粘贴到Excel中');
-        } catch (err) {
-            console.error('复制失败：', err);
-            alert('复制失败，请手动选择表格并复制');
-        } finally {
-            document.body.removeChild(tempTextArea);
-        }
-    });
+  // 创建一个临时的textarea元素来存储要复制的文本
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = copyText;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  
+  try {
+    document.execCommand('copy');
+    alert('表格内容已复制到剪贴板，现在可以直接粘贴到Excel中');
+  } catch (err) {
+    console.error('复制失败：', err);
+    alert('复制失败，请手动选择表格并复制');
+  } finally {
+    document.body.removeChild(tempTextArea);
+  }
+});
 
 
     startTimer();
