@@ -81,11 +81,16 @@
             padding: 8px;
             text-align: center;
         }
-        input[type="text"] {
+        textarea.event-input {
             width: 100%;
+            height: 60px;
             border: none;
-            text-align: center;
+            text-align: left;
             background-color: transparent;
+            resize: vertical;
+            overflow-y: auto;
+            font-family: inherit;
+            font-size: inherit;
         }
         @media (max-width: 767px) {
             .timer {
@@ -105,6 +110,9 @@
             }
             th, td {
                 padding: 4px;
+            }
+            textarea.event-input {
+                height: 40px;
             }
         }
     </style>
@@ -229,18 +237,18 @@
 
         timeTd.textContent = recordTime;
         hoursTd.textContent = hours.toFixed(2);
-        const eventInput = document.createElement("input");
-        eventInput.type = "text";
-        eventInput.value = name || "";
-        eventInput.onblur = () => {
+        const eventTextarea = document.createElement("textarea");
+        eventTextarea.className = "event-input";
+        eventTextarea.value = name || "";
+        eventTextarea.onblur = () => {
             const records = JSON.parse(localStorage.getItem("records")) || [];
             const recordIndex = records.findIndex(record => record.startTime === startTime && record.endTime === endTime);
             if (recordIndex > -1) {
-                records[recordIndex].name = eventInput.value;
+                records[recordIndex].name = eventTextarea.value;
                 localStorage.setItem("records", JSON.stringify(records));
             }
         };
-        eventTd.appendChild(eventInput);
+        eventTd.appendChild(eventTextarea);
         deleteTd.appendChild(deleteBtn);
 
         tr.appendChild(timeTd);
@@ -313,32 +321,32 @@
         rows.forEach((row, index) => {
             const cells = row.querySelectorAll("th, td");
             const rowData = Array.from(cells).map((cell, cellIndex) => {
-            if (index === 0) {
-                // 表头
-                return cell.textContent;
-            } else if (cellIndex === 2) {
-                // 事件列（输入框）
-                const input = cell.querySelector("input");
-                return input ? input.value : "";
-            } else if (cellIndex === 3) {
-                // 跳过"操作"列
-                return "";
-            } else {
-                return cell.textContent;
-            }
+                if (index === 0) {
+                    // 表头
+                    return cell.textContent;
+                } else if (cellIndex === 2) {
+                    // 事件列（文本区域）
+                    const textarea = cell.querySelector("textarea");
+                    return textarea ? textarea.value : "";
+                } else if (cellIndex === 3) {
+                    // 跳过"操作"列
+                    return "";
+                } else {
+                    return cell.textContent;
+                }
             }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
             
             // 添加日期列
             if (index === 0) {
-            rowData.push("日期");
+                rowData.push("日期");
             } else {
-            // 使用记录的日期
-            const timeString = rowData[0]; // 获取时间字符串
-            const [hours, minutes, seconds] = timeString.split(':').map(Number);
-            const recordDate = new Date(currentDate);
-            recordDate.setHours(hours, minutes, seconds);
-            const formattedDate = formatRecordDate(recordDate.getTime());
-            rowData.push(formattedDate);
+                // 使用记录的日期
+                const timeString = rowData[0]; // 获取时间字符串
+                const [hours, minutes, seconds] = timeString.split(':').map(Number);
+                const recordDate = new Date(currentDate);
+                recordDate.setHours(hours, minutes, seconds);
+                const formattedDate = formatRecordDate(recordDate.getTime());
+                rowData.push(formattedDate);
             }
             
             copyText += rowData.join("\t") + "\n";
