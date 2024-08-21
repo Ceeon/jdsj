@@ -390,7 +390,7 @@
         date: formatRecordDate(endTime),
       });
 
-      location.reload(); // 刷新页面以显示更新后���记录
+      location.reload(); // 刷新页面以显示更新后记录
     }
 
     function createDateString(date) {
@@ -424,7 +424,7 @@
         midnightStartDate.setHours(23, 59, 59, 999);
         const midnightEndDate = new Date(endDate);
         midnightEndDate.setHours(0, 0, 0, 0);
-        saveRecord(startTime, midnightStartDate.getTime(), name + " (��一天部分)");
+        saveRecord(startTime, midnightStartDate.getTime(), name + " (一天部分)");
         saveRecord(midnightEndDate.getTime(), endTime, name + " (第二天部分)");
       } else {
         saveRecord(startTime, endTime, name);
@@ -499,6 +499,7 @@
     feishuBtn.addEventListener("click", sendToFeishu);
 
     function sendToFeishu() {
+      console.log('开始发送到飞书...');
       const records = [];
       const rows = document.querySelectorAll("tbody tr");
       rows.forEach(row => {
@@ -507,32 +508,35 @@
       });
 
       const date = formatRecordDate(currentDate.getTime());
-      const message = {
+      const testMessage = {
         msg_type: "text",
         content: {
-          text: `每日时间记录\n日期: ${date}\n\n${records.join('\n')}`
+          text: "这是一条测试消息"
         }
       };
 
-      // 使用JSONP方法发送请求
-      const script = document.createElement('script');
-      const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-      window[callbackName] = function(response) {
-        console.log('飞书响应:', response);
+      fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(testMessage)
+      })
+      .then(response => {
+        console.log('收到响应:', response.status);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('飞书响应数据:', data);
         alert('已成功发送到飞书');
-        delete window[callbackName];
-        document.body.removeChild(script);
-      };
-
-      script.src = `https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe?callback=${callbackName}&message=${encodeURIComponent(JSON.stringify(message))}`;
-      document.body.appendChild(script);
-
-      script.onerror = function() {
-        console.error('发送失败');
-        alert('发��到飞书失败');
-        delete window[callbackName];
-        document.body.removeChild(script);
-      };
+      })
+      .catch((error) => {
+        console.error('发送失败:', error.message);
+        alert(`发送到飞书失败: ${error.message}`);
+      });
     }
 
     startTimer();
