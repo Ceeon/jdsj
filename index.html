@@ -198,7 +198,7 @@
       <div class="record-btn">记录</div>
       <div class="copy-btn">复制表格</div>
       <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书5</div>
+      <div class="feishu-btn">发送飞书6</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -517,23 +517,22 @@
       };
 
       const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
+
       try {
         console.log('开始发送到飞书...');
+        console.log('准备发送的消息:', message);
         const response = await fetch(webhookUrl, {
           method: 'POST',
+          mode: 'no-cors', // 添加这一行
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(testMessage)
+          body: JSON.stringify(message)
         });
         
         console.log('收到响应:', response.status);
         const responseText = await response.text(); // 使用 text() 而不是 json()
         console.log('响应内容:', responseText);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
-        }
         
         alert('已成功发送到飞书');
       } catch (error) {
