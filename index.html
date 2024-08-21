@@ -198,7 +198,7 @@
       <div class="record-btn">记录</div>
       <div class="copy-btn">复制表格</div>
       <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书6</div>
+      <div class="feishu-btn">发送飞书</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -504,15 +504,84 @@
       const rows = document.querySelectorAll("tbody tr");
       rows.forEach(row => {
         const cells = row.querySelectorAll("td");
-        records.push(`${cells[0].textContent} - ${cells[1].textContent}小时 - ${cells[2].querySelector("textarea").value}`);
+        records.push({
+          time: cells[0].textContent,
+          hours: cells[1].textContent,
+          event: cells[2].querySelector("textarea").value
+        });
       });
 
       // 格式化数据
       const date = formatRecordDate(currentDate.getTime());
+      const formattedRecords = records.map(record => 
+        `时间: ${record.time}, 小时: ${record.hours}, 事件: ${record.event}`
+      ).join('\n');
+
       const message = {
-        msg_type: "text",
+        msg_type: "post",
         content: {
-          text: `每日时间记录\n日期: ${date}\n\n${records.join('\n')}`
+          post: {
+            zh_cn: {
+              title: `每日时间记录 - ${date}`,
+              content: [
+                [
+                  {
+                    tag: "text",
+                    text: "时间记录表格："
+                  }
+                ],
+                [
+                  {
+                    tag: "table",
+                    columns: [
+                      {
+                        width: 100,
+                        weight: 1
+                      },
+                      {
+                        width: 100,
+                        weight: 1
+                      },
+                      {
+                        width: 200,
+                        weight: 1
+                      }
+                    ],
+                    rows: [
+                      [
+                        {
+                          tag: "text",
+                          text: "时间"
+                        },
+                        {
+                          tag: "text",
+                          text: "小时"
+                        },
+                        {
+                          tag: "text",
+                          text: "事件"
+                        }
+                      ],
+                      ...records.map(record => [
+                        {
+                          tag: "text",
+                          text: record.time
+                        },
+                        {
+                          tag: "text",
+                          text: record.hours
+                        },
+                        {
+                          tag: "text",
+                          text: record.event
+                        }
+                      ])
+                    ]
+                  }
+                ]
+              ]
+            }
+          }
         }
       };
 
@@ -523,7 +592,6 @@
         console.log('准备发送的消息:', message);
         const response = await fetch(webhookUrl, {
           method: 'POST',
-          mode: 'no-cors', // 添加这一行
           headers: {
             'Content-Type': 'application/json'
           },
@@ -531,8 +599,11 @@
         });
         
         console.log('收到响应:', response.status);
-        const responseText = await response.text(); // 使用 text() 而不是 json()
-        console.log('响应内容:', responseText);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const responseData = await response.json();
+        console.log('响应内容:', responseData);
         
         alert('已成功发送到飞书');
       } catch (error) {
