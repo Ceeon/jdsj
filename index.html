@@ -198,7 +198,7 @@
       <div class="record-btn">记录</div>
       <div class="copy-btn">复制表格</div>
       <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书2</div>
+      <div class="feishu-btn">发送飞书3</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -508,28 +508,29 @@
         }
       };
 
-      const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-      const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
-
-      fetch(proxyUrl + webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testMessage)
-      })
-      .then(response => {
+      try {
+        console.log('开始发送到飞书...');
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(testMessage)
+        });
+        
         console.log('收到响应:', response.status);
-        return response.json();
-      })
-      .then(data => {
-        console.log('飞书响应数据:', data);
+        const responseText = await response.text(); // 使用 text() 而不是 json()
+        console.log('响应内容:', responseText);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+        }
+        
         alert('已成功发送到飞书');
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('发送失败:', error);
         alert(`发送到飞书失败: ${error.message}`);
-      });
+      }
     }
 
     startTimer();
