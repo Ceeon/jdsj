@@ -498,38 +498,45 @@
 
     feishuBtn.addEventListener("click", sendToFeishu);
 
-    async function sendToFeishu() {
-      try {
-        console.log('开始发送到飞书...');
-        const testMessage = {
-          msg_type: "text",
-          content: {
-            text: "这是一条测试消息"
-          }
-        };
-        console.log('准备发送的消息:', testMessage);
+    function sendToFeishu() {
+      console.log('开始发送到飞书...');
+      const records = [];
+      const rows = document.querySelectorAll("tbody tr");
+      rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        records.push(`${cells[0].textContent} - ${cells[1].textContent}小时 - ${cells[2].querySelector("textarea").value}`);
+      });
 
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
+      const date = formatRecordDate(currentDate.getTime());
+      const testMessage = {
+        msg_type: "text",
+        content: {
+          text: "这是一条测试消息"
+        }
+      };
 
-        const response = await fetch(proxyUrl + webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(testMessage)
-        });
+      fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(testMessage)
+      })
+      .then(response => {
         console.log('收到响应:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
+        return response.json();
+      })
+      .then(data => {
         console.log('飞书响应数据:', data);
         alert('已成功发送到飞书');
-      } catch (error) {
-        console.error('发送失败:', error);
+      })
+      .catch((error) => {
+        console.error('发送失败:', error.message);
         alert(`发送到飞书失败: ${error.message}`);
-      }
+      });
     }
 
     startTimer();
