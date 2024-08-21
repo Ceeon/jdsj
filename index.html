@@ -198,7 +198,7 @@
       <div class="record-btn">记录</div>
       <div class="copy-btn">复制表格</div>
       <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书1</div>
+      <div class="feishu-btn">发送飞书</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -498,45 +498,38 @@
 
     feishuBtn.addEventListener("click", sendToFeishu);
 
-    function sendToFeishu() {
-      console.log('开始发送到飞书...');
-      const records = [];
-      const rows = document.querySelectorAll("tbody tr");
-      rows.forEach(row => {
-        const cells = row.querySelectorAll("td");
-        records.push(`${cells[0].textContent} - ${cells[1].textContent}小时 - ${cells[2].querySelector("textarea").value}`);
-      });
+    async function sendToFeishu() {
+      try {
+        console.log('开始发送到飞书...');
+        const testMessage = {
+          msg_type: "text",
+          content: {
+            text: "这是一条测试消息"
+          }
+        };
+        console.log('准备发送的消息:', testMessage);
 
-      const date = formatRecordDate(currentDate.getTime());
-      const testMessage = {
-        msg_type: "text",
-        content: {
-          text: "这是一条测试消息"
-        }
-      };
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
 
-      fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testMessage)
-      })
-      .then(response => {
+        const response = await fetch(proxyUrl + webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(testMessage)
+        });
         console.log('收到响应:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then(data => {
+        const data = await response.json();
         console.log('飞书响应数据:', data);
         alert('已成功发送到飞书');
-      })
-      .catch((error) => {
-        console.error('发送失败:', error.message);
+      } catch (error) {
+        console.error('发送失败:', error);
         alert(`发送到飞书失败: ${error.message}`);
-      });
+      }
     }
 
     startTimer();
