@@ -498,45 +498,118 @@
 
     feishuBtn.addEventListener("click", sendToFeishu);
 
-    function sendToFeishu() {
-      console.log('开始发送到飞书...');
+    async function sendToFeishu() {
+      // 收集表格数据
       const records = [];
       const rows = document.querySelectorAll("tbody tr");
       rows.forEach(row => {
         const cells = row.querySelectorAll("td");
-        records.push(`${cells[0].textContent} - ${cells[1].textContent}小时 - ${cells[2].querySelector("textarea").value}`);
+        records.push({
+          time: cells[0].textContent,
+          hours: cells[1].textContent,
+          event: cells[2].querySelector("textarea").value
+        });
       });
 
+      // 格式化数据
       const date = formatRecordDate(currentDate.getTime());
-      const testMessage = {
-        msg_type: "text",
+      const formattedRecords = records.map(record => 
+        `时间: ${record.time}, 小时: ${record.hours}, 事件: ${record.event}`
+      ).join('\n');
+
+      const message = {
+        msg_type: "post",
         content: {
-          text: "这是一条测试消息"
+          post: {
+            zh_cn: {
+              title: `每日时间记录 - ${date}`,
+              content: [
+                [
+                  {
+                    tag: "text",
+                    text: "时间记录表格："
+                  }
+                ],
+                [
+                  {
+                    tag: "table",
+                    columns: [
+                      {
+                        width: 100,
+                        weight: 1
+                      },
+                      {
+                        width: 100,
+                        weight: 1
+                      },
+                      {
+                        width: 200,
+                        weight: 1
+                      }
+                    ],
+                    rows: [
+                      [
+                        {
+                          tag: "text",
+                          text: "时间"
+                        },
+                        {
+                          tag: "text",
+                          text: "小时"
+                        },
+                        {
+                          tag: "text",
+                          text: "事件"
+                        }
+                      ],
+                      ...records.map(record => [
+                        {
+                          tag: "text",
+                          text: record.time
+                        },
+                        {
+                          tag: "text",
+                          text: record.hours
+                        },
+                        {
+                          tag: "text",
+                          text: record.event
+                        }
+                      ])
+                    ]
+                  }
+                ]
+              ]
+            }
+          }
         }
       };
 
-      fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testMessage)
-      })
-      .then(response => {
+      const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
+
+      try {
+        console.log('开始发送到飞书...');
+        console.log('准备发送的消息:', message);
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(message)
+        });
+        
         console.log('收到响应:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then(data => {
-        console.log('飞书响应数据:', data);
+        const responseData = await response.json();
+        console.log('响应内容:', responseData);
+        
         alert('已成功发送到飞书');
-      })
-      .catch((error) => {
-        console.error('发送失败:', error.message);
+      } catch (error) {
+        console.error('发送失败:', error);
         alert(`发送到飞书失败: ${error.message}`);
-      });
+      }
     }
 
     startTimer();
