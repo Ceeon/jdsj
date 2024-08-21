@@ -198,7 +198,7 @@
       <div class="record-btn">记录</div>
       <div class="copy-btn">复制表格</div>
       <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书111</div>
+      <div class="feishu-btn">发送飞书</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -499,112 +499,32 @@
     feishuBtn.addEventListener("click", sendToFeishu);
 
     async function sendToFeishu() {
-      // 收集表格数据
-      const records = [];
-      const rows = document.querySelectorAll("tbody tr");
-      rows.forEach(row => {
-        const cells = row.querySelectorAll("td");
-        records.push({
-          time: cells[0].textContent,
-          hours: cells[1].textContent,
-          event: cells[2].querySelector("textarea").value
-        });
-      });
-
-      // 格式化数据
-      const date = formatRecordDate(currentDate.getTime());
-      const formattedRecords = records.map(record => 
-        `时间: ${record.time}, 小时: ${record.hours}, 事件: ${record.event}`
-      ).join('\n');
-
-      const message = {
-        msg_type: "post",
-        content: {
-          post: {
-            zh_cn: {
-              title: `每日时间记录 - ${date}`,
-              content: [
-                [
-                  {
-                    tag: "text",
-                    text: "时间记录表格："
-                  }
-                ],
-                [
-                  {
-                    tag: "table",
-                    columns: [
-                      {
-                        width: 100,
-                        weight: 1
-                      },
-                      {
-                        width: 100,
-                        weight: 1
-                      },
-                      {
-                        width: 200,
-                        weight: 1
-                      }
-                    ],
-                    rows: [
-                      [
-                        {
-                          tag: "text",
-                          text: "时间"
-                        },
-                        {
-                          tag: "text",
-                          text: "小时"
-                        },
-                        {
-                          tag: "text",
-                          text: "事件"
-                        }
-                      ],
-                      ...records.map(record => [
-                        {
-                          tag: "text",
-                          text: record.time
-                        },
-                        {
-                          tag: "text",
-                          text: record.hours
-                        },
-                        {
-                          tag: "text",
-                          text: record.event
-                        }
-                      ])
-                    ]
-                  }
-                ]
-              ]
-            }
-          }
-        }
-      };
-
-      const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
-
       try {
         console.log('开始发送到飞书...');
-        console.log('准备发送的消息:', message);
-        const response = await fetch(webhookUrl, {
+        const testMessage = {
+          msg_type: "text",
+          content: {
+            text: "这是一条测试消息"
+          }
+        };
+        console.log('准备发送的消息:', testMessage);
+
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const webhookUrl = 'https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe';
+
+        const response = await fetch(proxyUrl + webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(message)
+          body: JSON.stringify(testMessage)
         });
-        
         console.log('收到响应:', response.status);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const responseData = await response.json();
-        console.log('响应内容:', responseData);
-        
+        const data = await response.json();
+        console.log('飞书响应数据:', data);
         alert('已成功发送到飞书');
       } catch (error) {
         console.error('发送失败:', error);
