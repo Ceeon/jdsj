@@ -43,7 +43,6 @@
     }
 
     .record-btn,
-    .copy-btn,
     .feishu-btn {
       padding: 10px;
       background-color: #FC6E20;
@@ -58,14 +57,13 @@
     }
 
     .record-btn:hover,
-    .copy-btn:hover,
     .feishu-btn:hover {
       box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
       transform: translateY(-2px);
     }
 
     .feishu-btn {
-      background-color: #3370FF; /* 飞书蓝色 */
+      background-color: #FC6E20; /* 飞书蓝色 */
     }
 
     .date-selector {
@@ -127,7 +125,6 @@
       }
 
       .record-btn,
-      .copy-btn,
       .feishu-btn {
         font-size: 18px;
         width: calc(4em + 56px);
@@ -174,6 +171,7 @@
 
     /* New style for event input */
     .event-input-container {
+      position: relative;
       margin-top: 20px;
     }
 
@@ -181,8 +179,35 @@
       width: 100%;
       padding: 10px;
       font-size: 16px;
-      border: 1px solid #FC6E20;
+      border: 1px solid #f79e6e;
       border-radius: 5px;
+    }
+
+    .quick-select-container {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-width: 70%; /* 限制最大宽度，避免遮挡输入框 */
+    }
+
+    .quick-select-container button {
+      padding: 3px 8px;
+      background-color: transparent;
+      color: #ffcaad;
+      border: 1px solid #ffcaad;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .quick-select-container button:hover {
+      background-color: #FC6E20;
+      color: #ffffff;
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -193,12 +218,11 @@
     <div class="timer">00:00:00</div>
     <div class="event-input-container">
       <input type="text" id="eventInput" placeholder="输入事件描述">
+      <div class="quick-select-container"></div>
     </div>
     <div class="button-container">
       <div class="record-btn">记录</div>
-      <div class="copy-btn">复制表格</div>
-      <!-- 新增发送飞书按钮 -->
-      <div class="feishu-btn">发送飞书13</div>
+      <div class="feishu-btn">发送飞书</div>
     </div>
     <div class="date-selector"></div>
     <div class="table-container">
@@ -219,14 +243,14 @@
     // 初始化Firebase
     firebase.initializeApp({
 
-      apiKey: "AIzaSyAfa1WtM-mBL6n1KzSFceviOVyfDBF6UWk",
-  authDomain: "jdjs-ceshi.firebaseapp.com",
-  databaseURL: "https://jdjs-ceshi-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "jdjs-ceshi",
-  storageBucket: "jdjs-ceshi.appspot.com",
-  messagingSenderId: "705815735708",
-  appId: "1:705815735708:web:c96ae27e3dc3aac9e6ac59",
-  measurementId: "G-5K6TJVXXWZ"
+      apiKey: "AIzaSyD60SMapmLNsIwL7sD9YOboBkaRIII124c",
+      authDomain: "jdjs-af509.firebaseapp.com",
+      databaseURL: "https://jdjs-af509-default-rtdb.asia-southeast1.firebasedatabase.app/",
+      projectId: "jdjs-af509",
+      storageBucket: "jdjs-af509.appspot.com",
+      messagingSenderId: "1002601023362",
+      appId: "1:1002601023362:web:a3a290b402babc628e719b",
+      measurementId: "G-MK3TMNT22S"
     });
 
     // 获取数据库引用
@@ -234,11 +258,11 @@
 
     const timer = document.querySelector(".timer");
     const recordBtn = document.querySelector(".record-btn");
-    const copyBtn = document.querySelector(".copy-btn");
     const feishuBtn = document.querySelector(".feishu-btn");
     const tbody = document.querySelector("tbody");
     const dateSelector = document.querySelector(".date-selector");
     const eventInput = document.getElementById("eventInput");
+    const quickSelectContainer = document.querySelector(".quick-select-container");
     
     let time = Number(localStorage.getItem("time")) || 0;
     let interval;
@@ -282,7 +306,10 @@
 
     function formatRecordDate(timestamp) {
       const date = new Date(timestamp);
-      return date.toLocaleDateString("zh-CN");
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}/${month}/${day}`;
     }
 
     function startTimer() {
@@ -424,12 +451,49 @@
         midnightStartDate.setHours(23, 59, 59, 999);
         const midnightEndDate = new Date(endDate);
         midnightEndDate.setHours(0, 0, 0, 0);
-        saveRecord(startTime, midnightStartDate.getTime(), name + " (一天部分)");
-        saveRecord(midnightEndDate.getTime(), endTime, name + " (第二天部分)");
+        saveRecord(startTime, midnightStartDate.getTime(), name);
+        saveRecord(midnightEndDate.getTime(), endTime, name);
       } else {
         saveRecord(startTime, endTime, name);
       }
     }
+
+    function loadQuickSelectItems() {
+      database.ref('records').orderByChild('endTime').limitToLast(10).once('value', (snapshot) => {
+        const items = new Set();
+        snapshot.forEach((childSnapshot) => {
+          const record = childSnapshot.val();
+          if (record.name) {
+            items.add(record.name);
+          }
+        });
+        
+        quickSelectContainer.innerHTML = '';
+        items.forEach((item) => {
+          const button = document.createElement('button');
+          button.textContent = item;
+          button.onclick = () => {
+            eventInput.value = item;
+            updateQuickSelectVisibility();
+          };
+          quickSelectContainer.appendChild(button);
+        });
+        updateQuickSelectVisibility();
+      });
+    }
+
+    function updateQuickSelectVisibility() {
+      if (eventInput.value.trim() === '') {
+        quickSelectContainer.style.display = 'flex';
+      } else {
+        quickSelectContainer.style.display = 'none';
+      }
+    }
+
+    eventInput.addEventListener('input', updateQuickSelectVisibility);
+
+    // 在页面加载时初始化快捷选择项
+    loadQuickSelectItems();
 
     recordBtn.addEventListener("click", () => {
       const now = Date.now();
@@ -446,97 +510,89 @@
         resetTimer();
         startTimer();
         loadRecords();
-        eventInput.value = ""; // Clear the input field after recording
+        eventInput.value = "";
+        loadQuickSelectItems(); // 更新快捷选择事项
+        updateQuickSelectVisibility(); // 更新可见性
       });
-    });
-
-    copyBtn.addEventListener("click", () => {
-      const table = document.querySelector("table");
-      const rows = table.querySelectorAll("tr");
-      let copyText = "";
-      rows.forEach((row, index) => {
-        if (index === 0) return; // 跳过表头
-        const cells = row.querySelectorAll("td");
-        const rowData = Array.from(cells).map((cell, cellIndex) => {
-          if (cellIndex === 2) {
-            // 事件列（文本区域）
-            const textarea = cell.querySelector("textarea");
-            return textarea ? textarea.value : "";
-          } else if (cellIndex === 3) {
-            // 跳过"操作"列
-            return "";
-          } else {
-            return cell.textContent;
-          }
-        }).filter(text => text !== ""); // 移除空单元格（如"操作"列）
-
-        // 添加日期列
-        const timeString = rowData[0]; // 获取时间字符串
-        const [hours, minutes, seconds] = timeString.split(':').map(Number);
-        const recordDate = new Date(currentDate);
-        recordDate.setHours(hours, minutes, seconds);
-        const formattedDate = formatRecordDate(recordDate.getTime());
-        rowData.push(formattedDate);
-
-        copyText += rowData.join("\t") + "\n";
-      });
-      // 创建一个临时的textarea元素来存储要复制的文本
-      const tempTextArea = document.createElement("textarea");
-      tempTextArea.value = copyText;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      try {
-        document.execCommand('copy');
-        alert('表格内容已复制到剪贴板,现在可以直接粘贴到Excel中');
-      } catch (err) {
-        console.error('复制失败：', err);
-        alert('复制失败,请手动选择表格并复制');
-      } finally {
-        document.body.removeChild(tempTextArea);
-      }
     });
 
     feishuBtn.addEventListener("click", sendToFeishu);
 
-    function sendToFeishu() {
-      // 收集表格数据
-      const records = [];
+    async function sendToFeishu() {
       const rows = document.querySelectorAll("tbody tr");
-      rows.forEach(row => {
-        const cells = row.querySelectorAll("td");
-        records.push(`${cells[0].textContent} - ${cells[1].textContent}小时 - ${cells[2].querySelector("textarea").value}`);
-      });
+      console.log(`找到 ${rows.length} 行数据`);
+      
+      if (rows.length === 0) {
+        alert('没有找到数据可以发送');
+        return;
+      }
 
       const date = formatRecordDate(currentDate.getTime());
-      const testMessage = {
-        msg_type: "text",
-        content: {
-          text: `每日时间记录\n日期: ${date}\n\n${records.join('\n')}`
-        }
-      };
+      console.log(`当前日期: ${date}`);
 
-      console.log('开始发送到飞书...');
-      fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(testMessage)
-      })
-      .then(response => {
-        console.log('收到响应:', response.status);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].querySelectorAll("td");
+        if (cells.length < 3) {
+          console.error(`第 ${i+1} 行数据不完整，跳过`);
+          continue;
         }
-        return response.json();
-      })
-      .then(data => {
-        console.log('飞书响应数据:', data);
-        alert('已成功发送到飞书');
-      })
-      .catch((error) => {
-        console.error('发送失败:', error);
-        alert(`发送到飞书失败: ${error.message}`);
+
+        const time = cells[0].textContent;
+        const hours = parseFloat(cells[1].textContent);
+        const event = cells[2].querySelector("textarea").value.trim();
+
+        console.log(`第 ${i+1} 行数据:`, { date, time, hours, event });
+
+        if (!time || isNaN(hours)) {
+          console.error(`第 ${i+1} 行数据无效，跳过`);
+          continue;
+        }
+
+        const record = {
+          date: date,
+          time: time,
+          hour: hours,
+          things: event
+        };
+
+        const message = {
+          msg_type: "text",
+          content: record
+        };
+
+        console.log(`准备发送第 ${i+1} 条消息:`, JSON.stringify(message));
+        
+        try {
+          await sendMessage(message);
+          console.log(`第 ${i+1} 条消息发送成功`);
+        } catch (error) {
+          console.error(`第 ${i+1} 条消息发送失败:`, error);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      alert('所有数据已发送到飞书');
+    }
+
+    function sendMessage(message) {
+      return new Promise((resolve, reject) => {
+        fetch('https://o90p05z3t4.feishu.cn/base/automation/webhook/event/AFPJaWP3Fw5w0dhsTUNc8dBqnIe', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(message)
+        })
+        .then(() => {
+          console.log('请求已发送，但无法确认结果');
+          resolve();
+        })
+        .catch((error) => {
+          console.error('发送失败:', error);
+          reject(error);
+        });
       });
     }
 
